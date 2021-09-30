@@ -1,9 +1,16 @@
 import Web3 from 'web3'
 import HDWalletProvider from '@truffle/hdwallet-provider'
 import {Contract, CallOptions, SendOptions} from "web3-eth-contract"
+import ethSigUtil from 'eth-sig-util'
+
+import events from 'events'
 
 import { GET, POST } from './http'
 import { Config } from './config'
+import {
+    GetSaltResponse,
+    LoginResponse
+} from './model'
 
 import {
     GoodSleep
@@ -11,6 +18,10 @@ import {
 
 const { mnemonic } = require('@/../../file/secrets.json')
 console.log('mnemonic: ', mnemonic)
+
+const BASE_URL = 'https://dev-sleep.goodata.io'
+
+const emitter = new events.EventEmitter()
 
 const main = async () => {
     let config: Config = {
@@ -31,16 +42,40 @@ const main = async () => {
         console.log('name: ', v)
     })
     
-    // GET('https://dev-sleep.goodata.io/metadata/data/sleep/1', resp => {
-    //     console.log('resp: ', JSON.stringify(resp))
-    // })
-
-    POST('https://dev-sleep.goodata.io/v1/getSalt',
+    // Get salt
+    POST(BASE_URL + '/v1/getSalt',
         {"wallet_address": "0x32A5Ce4dd445fAd24ae6117272ad9AfEA32FFb12"},
         resp => {
-            console.log('getSalt: ', resp)
+            if (resp.code != 0) {
+                console.error('get salt fails, code: ', resp.code, 'mesg: ', resp.message)
+            }
+            let saltResp = resp.data as GetSaltResponse
+            let salt = saltResp.salt
+            emitter.emit('login', salt)
         }
     )
+
+    emitter.on('login', async salt => {
+        console.log('salt: ', salt)
+        let signature = await web3.eth.sign(salt, web3.defaultAccount as string)
+        POST(BASE_URL + '/v1/login',
+        {
+            salt: salt,
+            signature: signature,
+        },
+        resp => {
+            if (resp.code != 0) {
+                console.error('login fails, code: ', resp.code, 'mesg: ', resp.message)
+            }
+            let loginResp = resp.data as LoginResponse
+            emitter.emit('loginSucc', loginResp.token)
+        })
+    })
+
+    emitter.on('loginSucc', token => {
+        console.log('token: ', token)
+        
+    })
 
     // gs.sleepDataNFT.createAvatar({
     //     from: web3.defaultAccount

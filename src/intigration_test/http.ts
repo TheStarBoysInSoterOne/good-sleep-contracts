@@ -33,7 +33,11 @@ export const POST = async (url: string, postData: any, callback: (resp: Response
         let rawData = '';
         res.on('data', (chunk) => { rawData += chunk; })
         res.on('end', () => {
-            callback(JSON.parse(rawData) as Response)
+            let resp = JSON.parse(rawData) as Response
+            if (resp.code != 0) {
+                console.error('request fails, code: ', resp.code, 'mesg: ', resp.message)
+            }
+            callback(resp)
         })
     }
 
@@ -53,9 +57,9 @@ export const POST = async (url: string, postData: any, callback: (resp: Response
     const path = url.substring(url.indexOf('/'))
 
     const options = {
-        hostname: 'dev-sleep.goodata.io',
-        port:  443,
-        path: '/v1/getSalt',
+        hostname: hostname,
+        port:  port,
+        path: path,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -5,6 +5,8 @@
     "create-local": "graph create example --node http://127.0.0.1:8020",
     "codegen": "graph codegen",
     "build": "graph build",
+    "gentest": "cd ./src/intigration_test && tsc",
+    "test": "cd ./src/intigration_test/dist/node && node main.js",
     "deploy": "graph deploy example --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/",
     "deploy-local": "graph deploy example --ipfs http://localhost:5001 --node http://127.0.0.1:8020"
   },
